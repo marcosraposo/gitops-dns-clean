@@ -35,9 +35,8 @@ The repository structure should reflect this separation:
     ├── 03-dns-custom
     │   ├── 03-application-dns-custom.yaml # ArgoCD App for DNS Configuration
     │   └── manifests
-    │       ├── clean-nncp-job.yaml        # The PostDelete Hook Job (Cleanup)
-    │       ├── master-dns-custom.yaml     # NodeNetworkConfigurationPolicy (Master)
-    │       └── worker-dns-custom.yaml     # NodeNetworkConfigurationPolicy (Worker)
+    │       ├── clean-nncp-job.yaml        # The PostDelete Hook Job (Cleanup) 
+    │       └── dns-custom.yaml            # NodeNetworkConfigurationPolicy
     └── extras
         ├── 00-app-of-apps-dns-custom.yaml      # Main App that deploys 01, 02, and 03
 ```
@@ -48,9 +47,9 @@ This step involves creating the specific YAML files for the NNCP and the Cleanup
 
 ### 2.1. DNS-Resolver Configuration (NNCP)
 
-These files (`master-dns-custom.yaml` and `worker-dns-custom.yaml`) contain the desired DNS configuration using the `NodeNetworkConfigurationPolicy` (NNCP).
+The file (`dns-custom.yaml`)` contain the desired DNS configuration using the `NodeNetworkConfigurationPolicy` (NNCP).
 
-**(NNCP Example - `master-dns-custom.yaml`)**
+**(NNCP Example - `dns-custom.yaml`)**
 
 ```yaml
 apiVersion: nmstate.io/v1
@@ -66,30 +65,7 @@ spec:
         server:
           - 10.36.41.51
           - 10.36.17.1
-  nodeSelector:
-    node-role.kubernetes.io/master: ''
-        
-```
-
-**(NNCP Example - `worker-dns-custom.yaml`)**
-
-```yaml
-apiVersion: nmstate.io/v1
-kind: NodeNetworkConfigurationPolicy
-metadata:
-  name: worker-dns-custom
-spec:
-  desiredState:
-    dns-resolver:
-      config:
-        search:
-          - cluster.local
-        server:
-          - 10.36.41.51
-          - 10.36.17.1
-  nodeSelector:
-    node-role.kubernetes.io/worker: ''
-        
+       
 ```
 
 -----
@@ -223,15 +199,15 @@ spec:
 ### Deployment
 
 1.  In ArgoCD, create a new Application pointing only to the `00-apps-of-app-dns.yaml` file (or the directory `/extras`).
-2.  Synchronize the main Application (`nmstate-all-in-one`).
+2.  Synchronize the main Application (`00-app-of-apps-dns-custom`).
 3.  **Result:** ArgoCD will recursively deploy the Operator (01), the Instance (02), and the DNS Configuration (03), ensuring the NMState environment is fully ready in one go.
 
 ### Removal and Automated Cleanup
 
-1.  In ArgoCD, execute the **Delete** operation on the main Application (`nmstate-all-in-one`).
+1.  In ArgoCD, execute the **Delete** operation on the main Application (`00-app-of-apps-dns-custom`).
 2.  ArgoCD will attempt to delete the child Applications (01, 02, 03).
 3.  When deleting the **`03-dns-custom`** Application:
-      * The NNCPs (`master-dns-custom.yaml`, `worker-dns-custom.yaml`) are deleted.
+      * The NNCP (`dns-custom.yaml`) is deleted.
       * The **`nmstate-cleanup` Job** is triggered by the `PostDelete` hook.
       * The Job runs, applies a temporary NNCP with an empty DNS config (`config: {}`), forcing the nodes to revert the custom DNS settings to their default state.
       * The Job then deletes the temporary cleanup NNCP.
