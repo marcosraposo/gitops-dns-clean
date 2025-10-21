@@ -64,8 +64,8 @@ spec:
         search:
           - cluster.local
         server:
-          - 192.168.10.10
-          - 192.168.10.11
+          - 10.36.41.51
+          - 10.36.17.1
   nodeSelector:
     node-role.kubernetes.io/master: ''
         
@@ -85,8 +85,8 @@ spec:
         search:
           - cluster.local
         server:
-          - 192.168.10.10
-          - 192.168.10.11
+          - 10.36.41.51
+          - 10.36.17.1
   nodeSelector:
     node-role.kubernetes.io/worker: ''
         
