@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: nmstate-cleanup
-  namespace: openshift-nmstate 
+  namespace: openshift-gitops 
   annotations:
     argocd.argoproj.io/hook: PostDelete  
     argocd.argoproj.io/hook-delete-policy: HookSucceeded

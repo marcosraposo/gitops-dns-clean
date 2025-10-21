@@ -3,14 +3,14 @@ kind: ServiceAccount
 apiVersion: v1
 metadata:
   name: nmstate-clean-job
-  namespace: openshift-nmstate
+  namespace: openshift-gitops
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: nmstate-clean-job-cr
-  namespace: openshift-nmstate
+  namespace: openshift-gitops
 rules:
 - apiGroups: ["nmstate.io"] 
   resources: ["pods","pods/log","namespaces", "nodenetworkconfigurationpolicies", "nmstates"]
@@ -32,11 +32,11 @@ kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: nmstate-clean-job-crb
-  namespace: openshift-nmstate
+  namespace: openshift-gitops
 subjects:
   - kind: ServiceAccount
     name: nmstate-clean-job
-    namespace: openshift-nmstate
+    namespace: openshift-gitops
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
