@@ -4,17 +4,7 @@ metadata:
   name: nmstate-cleanup
   namespace: openshift-nmstate 
   annotations:
-    # Mantenha como Sync: O Job é considerado um recurso normal de sync.
-    # Isso impede a execução na criação, mas ainda requer o hook-delete-policy.
-    argocd.argoproj.io/hook: Sync  
-    
-    # ANOTAÇÃO CRUCIAL: Diz ao ArgoCD que, ao DELETAR a Application,
-    # este recurso DEVE ser executado como um Hook. Isso substitui a ordem
-    # normal de prune e o executa.
-    argocd.argoproj.io/hook-delete-policy: Hook
-    
-    # Use sync-wave alto para garantir que seja processado primeiro no DELETE do App-of-Apps.
-    argocd.argoproj.io/sync-wave: "5"
+    argocd.argoproj.io/sync-wave: "4"
 spec:
   template:
     spec:
