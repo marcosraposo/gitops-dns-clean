@@ -33,28 +33,27 @@ spec:
             oc apply -f /tmp/dns-custom-cleanup.yaml
             sleep 30
             oc delete nncp dns-custom-cleanup 
-            oc delete --namespace openshift-nmstate subscriptions.operators.coreos.com kubernetes-nmstate-operator
-            echo "Removendo ClusterServiceVersion do NMState..."
+            echo "Cleanup done"
+            #oc delete --namespace openshift-nmstate subscriptions.operators.coreos.com kubernetes-nmstate-operator
+            #echo "Removendo ClusterServiceVersion do NMState..."
             # Você precisará obter o nome exato do CSV, que muda com as versões (ex: nmstate-operator.1.x.x)
             # Uma forma robusta é listar e filtrar:
-            CSV_NAME=$(oc get csv -n openshift-nmstate -o=jsonpath='{.items[?(@.spec.displayName=="NMState")].metadata.name}' || true)
-            if [ -n "$CSV_NAME" ]; then
-                echo "Encontrado CSV: $CSV_NAME. Deletando..."
-                oc delete clusterserviceversion "$CSV_NAME" -n openshift-nmstate --wait=true --timeout=2m
-            else
-                echo "CSV do NMState não encontrado ou já deletado."
-            fi
-            echo "Removendo CRDs do NMState..."
-            oc -n openshift-nmstate delete nmstate nmstate
-            oc delete --all deployments --namespace=openshift-nmstate
+            #CSV_NAME=$(oc get csv -n openshift-nmstate -o=jsonpath='{.items[?(@.spec.displayName=="NMState")].metadata.name}' || true)
+            #if [ -n "$CSV_NAME" ]; then
+            #    echo "Encontrado CSV: $CSV_NAME. Deletando..."
+            #    oc delete clusterserviceversion "$CSV_NAME" -n openshift-nmstate --wait=true --timeout=2m
+            #else
+            #    echo "CSV do NMState não encontrado ou já deletado."
+            #fi
+            #echo "Removendo CRDs do NMState..."
+            #oc -n openshift-nmstate delete nmstate nmstate
+            #oc delete --all deployments --namespace=openshift-nmstate
             #INDEX=$(oc get console.operator.openshift.io cluster -o json | jq -r '.spec.plugins | to_entries[] | select(.value == "nmstate-console-plugin") | .key')
             #oc patch console.operator.openshift.io cluster --type=json -p "[{\"op\": \"remove\", \"path\": \"/spec/plugins/$INDEX\"}]"            
-            oc delete crd nmstates.nmstate.io
-            oc delete crd nodenetworkconfigurationenactments.nmstate.io
-            oc delete crd nodenetworkstates.nmstate.io
-            oc delete crd nodenetworkconfigurationpolicies.nmstate.io
-            oc delete namespace openshift-nmstate --wait=false
-            # Adicione qualquer outro CRD que o NMState possa ter instalado            
-            echo "Remoção do NMState Operator concluída."                      
-            #oc delete nncp master-dns-custom worker-dns-custom dns-custom-cleanup 
-            # oc delete -f /tmp/dns-custom-cleanup.yaml 
+            #oc delete crd nmstates.nmstate.io
+            #oc delete crd nodenetworkconfigurationenactments.nmstate.io
+            #oc delete crd nodenetworkstates.nmstate.io
+            #oc delete crd nodenetworkconfigurationpolicies.nmstate.io
+            #oc delete namespace openshift-nmstate --wait=false                    
+            #echo "Remoção do NMState Operator concluída."                      
+        
