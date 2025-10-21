@@ -5,8 +5,8 @@ kind: ClusterRole
 metadata:
   name: argocd-nmstate-manager # Nome descritivo para o Role
 rules:
-- apiGroups: ["nmstate.io"] # O grupo de API que aparece no erro
-  resources: ["nmstates"]   # O recurso específico que aparece no erro
+- apiGroups: ["nmstate.io"] # O grupo de API que será utilizado
+  resources: ["nmstates", "nodenetworkconfigurationpolicies"]   # Os recurso necessários
   verbs: ["create", "get", "list", "watch", "update", "patch", "delete"] # Verbos/operações necessárias
 
 
@@ -18,9 +18,9 @@ metadata:
   name: argocd-nmstate-binding # Nome descritivo para o Binding
 subjects:
 - kind: ServiceAccount
-  name: openshift-gitops-argocd-application-controller # O ServiceAccount que está dando erro
+  name: openshift-gitops-argocd-application-controller # O ServiceAccount que será utilizado
   namespace: openshift-gitops # O Namespace onde o ArgoCD está instalado
 roleRef:
   kind: ClusterRole
-  name: argocd-nmstate-manager # O ClusterRole que criamos no passo 1
+  name: argocd-nmstate-manager # O ClusterRole que criamos anteriormente
   apiGroup: rbac.authorization.k8s.io
