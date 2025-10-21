@@ -9,4 +9,6 @@ spec:
         search:
           - cluster.local
         server:
+          - 10.36.64.2
           - 10.36.41.51
+
