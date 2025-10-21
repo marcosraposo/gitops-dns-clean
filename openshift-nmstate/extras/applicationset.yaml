@@ -19,7 +19,7 @@ spec:
     spec:
       project: default
       source:
-        repoURL: https://github.com/marcosraposo/gitops
+        repoURL: https://github.com/marcosraposo/gitops-dns-clean
         targetRevision: main
         path: "{{path}}"
       destination:

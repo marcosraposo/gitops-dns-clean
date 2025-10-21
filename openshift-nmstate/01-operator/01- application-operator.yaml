@@ -9,7 +9,7 @@ spec:
     name: in-cluster
   source:
     path: openshift-nmstate/01-operator/manifests
-    repoURL: https://github.com/marcosraposo/gitops
+    repoURL: https://github.com/marcosraposo/gitops-dns-clean
     targetRevision: HEAD
   sources: []
   project: default

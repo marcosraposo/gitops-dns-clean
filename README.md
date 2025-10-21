@@ -201,13 +201,13 @@ spec:
     name: in-cluster  
   sources:
     - path: openshift-nmstate/01-operator/
-      repoURL: https://github.com/marcosraposo/gitops
+      repoURL: https://github.com/marcosraposo/gitops-dns-clean
       targetRevision: HEAD
     - path: openshift-nmstate/02-instance/
-      repoURL: https://github.com/marcosraposo/gitops
+      repoURL: https://github.com/marcosraposo/gitops-dns-clean
       targetRevision: HEAD   
     - path: openshift-nmstate/03-dns-custom/
-      repoURL: https://github.com/marcosraposo/gitops
+      repoURL: https://github.com/marcosraposo/gitops-dns-clean
       targetRevision: HEAD          
   project: default
   syncPolicy:
