@@ -11,6 +11,9 @@ rules:
 - apiGroups: ["batch"] # O grupo de API que será utilizado para criar o job de limpeza
   resources: ["jobs"]
   verbs: ["*"] 
+- apiGroups: ["*"] # O grupo de API que será utilizado para criar o job de limpeza
+  resources: ["serviceaccounts"]
+  verbs: ["*"]   
 
 ---
 
