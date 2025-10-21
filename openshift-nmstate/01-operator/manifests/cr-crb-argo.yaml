@@ -5,10 +5,12 @@ kind: ClusterRole
 metadata:
   name: argocd-nmstate-manager # Nome descritivo para o Role
 rules:
-- apiGroups: ["nmstate.io"] # O grupo de API que será utilizado
+- apiGroups: ["nmstate.io"] # O grupo de API que será utilizado para criar objetos do nmstate
   resources: ["*"]
   verbs: ["*"] 
-
+- apiGroups: ["batch"] # O grupo de API que será utilizado para criar o job de limpeza
+  resources: ["jobs"]
+  verbs: ["*"] 
 
 ---
 
