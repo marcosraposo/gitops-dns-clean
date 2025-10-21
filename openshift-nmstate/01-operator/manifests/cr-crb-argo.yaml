@@ -6,8 +6,8 @@ metadata:
   name: argocd-nmstate-manager # Nome descritivo para o Role
 rules:
 - apiGroups: ["nmstate.io"] # O grupo de API que será utilizado
-  resources: ["nmstates", "nodenetworkconfigurationpolicies"]   # Os recurso necessários
-  verbs: ["create", "get", "list", "watch", "update", "patch", "delete"] # Verbos/operações necessárias
+  resources: ["*"]
+  verbs: ["*"] 
 
 
 ---
