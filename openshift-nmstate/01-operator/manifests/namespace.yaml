@@ -4,3 +4,4 @@ metadata:
   name: openshift-nmstate
   labels:
     openshift.io/cluster-monitoring: "true"  
+    argocd.argoproj.io/managed-by: openshift-gitops
