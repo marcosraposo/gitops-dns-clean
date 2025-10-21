@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: 01-nmstate-operator
-  namespace: openshift-gitops   
+  namespace: openshift-gitops    
 spec:
   destination:
     namespace: openshift-nmstate

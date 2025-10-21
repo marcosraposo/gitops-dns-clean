@@ -55,7 +55,7 @@ The file (`dns-custom.yaml`)` contain the desired DNS configuration using the `N
 apiVersion: nmstate.io/v1
 kind: NodeNetworkConfigurationPolicy
 metadata:
-  name: master-dns-custom
+  name: dns-custom
 spec:
   desiredState:
     dns-resolver:
@@ -64,7 +64,6 @@ spec:
           - cluster.local
         server:
           - 10.36.41.51
-          - 10.36.17.1
        
 ```
 

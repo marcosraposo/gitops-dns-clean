@@ -58,6 +58,3 @@ spec:
             echo "Remoção do NMState Operator concluída."                      
             #oc delete nncp master-dns-custom worker-dns-custom dns-custom-cleanup 
             # oc delete -f /tmp/dns-custom-cleanup.yaml 
-          
-
-
