@@ -1,0 +1,37 @@
+# app-pai/delete-app-filho-hooks.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: delete-child-apps-in-order
+  annotations:
+    argocd.argoproj.io/hook: PostDelete # Este hook será executado antes da sincronização/deleção de outros recursos do AppPai
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded # O Job do hook só será removido se for bem-sucedido    
+  namespace: openshift-gitops # O namespace onde seu ArgoCD está, ou onde você tem permissão para gerenciar Applications
+spec:
+  template:
+    spec:
+      serviceAccountName: openshift-gitops-argocd-application-controller # Requer permissões para deletar Applications
+      containers:
+      - name: delete-apps-sequentially
+        image: registry.redhat.io/openshift4/ose-cli:latest # Ou qualquer imagem com kubectl
+        command: ["/bin/bash", "-c"]
+        args:
+          - |
+
+            echo "Aguardando job de deleção completa do nncp do dns-custom e forçar dns default no resolv.conf"
+            sleep 60        
+            echo "Iniciando deleção sequencial de aplicativos filhos..." 
+            
+            # 2. Deletar nmstate-operator e esperar sua remoção completa
+            echo "Deletando nmstate-operator..."
+            oc delete applications.argoproj.io nmstate-operator -n openshift-gitops --wait=true --timeout=5m # Ajuste namespace e timeout
+            if [ $? -ne 0 ]; then
+                echo "Erro ao deletar nmstate-operator ou timeout excedido."
+                exit 1
+            fi
+            echo "nmstate-operator deletado com sucesso."
+
+            echo "Deleção de aplicativos filhos concluída."
+
+      restartPolicy: Never
+  backoffLimit: 4 # Tenta novamente se o Job falhar

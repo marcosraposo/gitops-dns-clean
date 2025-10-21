@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nmstate-helper
+  namespace: openshift-gitops   
+spec:
+  destination:
+    namespace: openshift-gitops
+    name: in-cluster
+  source:
+    path: openshift-nmstate/04-helper/manifests
+    repoURL: https://github.com/marcosraposo/gitops
+    targetRevision: HEAD
+  sources: []
+  project: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
