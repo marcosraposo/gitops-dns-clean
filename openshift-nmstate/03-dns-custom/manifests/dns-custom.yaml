@@ -2,9 +2,6 @@ apiVersion: nmstate.io/v1
 kind: NodeNetworkConfigurationPolicy
 metadata:
   name: dns-custom
-  annotations:
-    # Use sync-wave alto para garantir que seja processado primeiro no DELETE do App-of-Apps.
-    argocd.argoproj.io/sync-wave: "5"  
 spec:
   desiredState:
     dns-resolver:

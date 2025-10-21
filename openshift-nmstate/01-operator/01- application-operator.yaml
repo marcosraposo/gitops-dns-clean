@@ -2,7 +2,10 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: 01-nmstate-operator
-  namespace: openshift-gitops    
+  namespace: openshift-gitops 
+  annotations:
+    # Use sync-wave alto para garantir que seja processado primeiro no DELETE do App-of-Apps.
+    argocd.argoproj.io/sync-wave: "-1"       
 spec:
   destination:
     namespace: openshift-nmstate
