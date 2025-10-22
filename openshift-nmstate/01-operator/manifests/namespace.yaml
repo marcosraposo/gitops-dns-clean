@@ -4,6 +4,4 @@ metadata:
   name: openshift-nmstate
   labels:
     openshift.io/cluster-monitoring: "true"  
-  annotations:
-    # 🚨 Adicione esta anotação
-    argocd.argoproj.io/sync-options: Delete=true,Finalize=false
+
