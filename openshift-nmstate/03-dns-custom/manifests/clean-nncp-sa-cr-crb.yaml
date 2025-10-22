@@ -4,8 +4,6 @@ apiVersion: v1
 metadata:
   name: nmstate-clean-job
   namespace: openshift-nmstate
-  annotations: 
-    argocd.argoproj.io/sync-wave: "-5"  
   finalizers:
   - resources-finalizer.argocd.argoproj.io/background
 
@@ -15,8 +13,6 @@ kind: ClusterRole
 metadata:
   name: nmstate-clean-job-cr
   namespace: openshift-nmstate
-  annotations: 
-    argocd.argoproj.io/sync-wave: "-5"
   finalizers:
   - resources-finalizer.argocd.argoproj.io/background  
 rules:
@@ -41,8 +37,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: nmstate-clean-job-crb
   namespace: openshift-nmstate
-  annotations: 
-    argocd.argoproj.io/sync-wave: "-5"
   finalizers:
   - resources-finalizer.argocd.argoproj.io/background
 subjects:
