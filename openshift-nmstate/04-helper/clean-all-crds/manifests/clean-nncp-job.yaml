@@ -5,7 +5,7 @@ metadata:
   namespace: openshift-nmstate 
   annotations:
     argocd.argoproj.io/hook: PostDelete  
-    argocd.argoproj.io/hook-delete-policy: HookFailed
+
 spec:
   template:
     spec:
