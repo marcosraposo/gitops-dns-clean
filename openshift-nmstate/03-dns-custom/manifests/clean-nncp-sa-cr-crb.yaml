@@ -6,6 +6,8 @@ metadata:
   namespace: openshift-nmstate
   annotations: 
     argocd.argoproj.io/sync-wave: "-5"  
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io/background
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -15,6 +17,8 @@ metadata:
   namespace: openshift-nmstate
   annotations: 
     argocd.argoproj.io/sync-wave: "-5"
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io/background  
 rules:
 - apiGroups: ["nmstate.io"] 
   resources: ["pods","pods/log","namespaces", "nodenetworkconfigurationpolicies", "nmstates"]
@@ -39,6 +43,8 @@ metadata:
   namespace: openshift-nmstate
   annotations: 
     argocd.argoproj.io/sync-wave: "-5"
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io/background
 subjects:
   - kind: ServiceAccount
     name: nmstate-clean-job

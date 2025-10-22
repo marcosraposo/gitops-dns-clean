@@ -3,6 +3,7 @@ kind: Job
 metadata:
   name: nmstate-cleanup
   namespace: openshift-nmstate 
+  
   annotations:
     argocd.argoproj.io/hook: PostDelete  
     argocd.argoproj.io/hook-delete-policy: HookFailed
