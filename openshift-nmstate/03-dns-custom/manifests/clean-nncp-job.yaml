@@ -53,7 +53,7 @@ spec:
             oc delete crd nodenetworkconfigurationenactments.nmstate.io
             oc delete crd nodenetworkstates.nmstate.io
             oc delete crd nodenetworkconfigurationpolicies.nmstate.io
-            oc delete namespace openshift-nmstate --wait=false
+            #oc delete namespace openshift-nmstate --wait=false
             # Adicione qualquer outro CRD que o NMState possa ter instalado            
             echo "Remoção do NMState Operator concluída."                      
             #oc delete nncp master-dns-detran worker-dns-detran dns-detran-cleanup 
