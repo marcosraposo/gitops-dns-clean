@@ -24,10 +24,7 @@ spec:
       targetRevision: HEAD   
     - path: openshift-nmstate/03-dns-custom/
       repoURL: https://github.com/marcosraposo/gitops-dns-clean
-      targetRevision: HEAD          
-    - path: openshift-nmstate/04-helper/clean-all-crds
-      repoURL: https://github.com/marcosraposo/gitops-dns-clean
-      targetRevision: HEAD                
+      targetRevision: HEAD                        
   project: default
   syncPolicy:
     automated:
