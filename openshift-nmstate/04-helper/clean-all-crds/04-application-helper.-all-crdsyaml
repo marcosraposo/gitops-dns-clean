@@ -5,7 +5,7 @@ metadata:
   namespace: openshift-gitops   
 spec:
   destination:
-    namespace: openshift-gitops
+    namespace: openshift-nmstate
     name: in-cluster
   source:
     path: openshift-nmstate/04-helper/manifests

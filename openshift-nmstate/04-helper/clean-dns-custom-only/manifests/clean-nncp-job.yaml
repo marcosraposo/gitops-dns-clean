@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nmstate-cleanup
+  namespace: openshift-nmstate 
+  annotations:
+    argocd.argoproj.io/hook: PostDelete  
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  template:
+    spec:
+      serviceAccountName: nmstate-clean-job # O ServiceAccount que criamos
+      restartPolicy: Never # Garante que o Job não reinicie o pod se ele falhar
+      containers:
+      - name: yaml-generator-executor
+        image: registry.redhat.io/openshift4/ose-cli:latest # Imagem com o CLI do OpenShift
+        command: ["/bin/bash", "-c"]
+        args:
+          - | 
+
+            # 1. Escrever o conteúdo do YAML no arquivo
+            cat <<EOF > /tmp/dns-custom-cleanup.yaml
+            apiVersion: nmstate.io/v1
+            kind: NodeNetworkConfigurationPolicy
+            metadata:
+              name: dns-custom-cleanup
+              namespace: openshift-nmstate
+            spec: 
+              desiredState: 
+                dns-resolver:
+                  config: {}  
+            EOF
+            oc apply -f /tmp/dns-custom-cleanup.yaml
+            sleep 30
+            oc delete nncp dns-custom-cleanup 
+            # 2. Deletar a NNCP problemática que o ArgoCD não conseguiria
+            oc delete nncp dns-custom -n openshift-nmstate --ignore-not-found=true
+            echo "Cleanup NNCP done"
+            
