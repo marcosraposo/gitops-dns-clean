@@ -11,6 +11,8 @@ kind: ClusterRole
 metadata:
   name: nmstate-clean-job-cr
   namespace: openshift-nmstate
+  annotation: 
+    argocd.argoproj.io/sync-wave: "-5"
 rules:
 - apiGroups: ["nmstate.io"] 
   resources: ["pods","pods/log","namespaces", "nodenetworkconfigurationpolicies", "nmstates"]
