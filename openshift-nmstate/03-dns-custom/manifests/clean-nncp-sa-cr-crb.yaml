@@ -4,6 +4,8 @@ apiVersion: v1
 metadata:
   name: nmstate-clean-job
   namespace: openshift-nmstate
+  annotations: 
+    argocd.argoproj.io/sync-wave: "-5"  
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -11,7 +13,7 @@ kind: ClusterRole
 metadata:
   name: nmstate-clean-job-cr
   namespace: openshift-nmstate
-  annotation: 
+  annotations: 
     argocd.argoproj.io/sync-wave: "-5"
 rules:
 - apiGroups: ["nmstate.io"] 
@@ -35,6 +37,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: nmstate-clean-job-crb
   namespace: openshift-nmstate
+  annotations: 
+    argocd.argoproj.io/sync-wave: "-5"
 subjects:
   - kind: ServiceAccount
     name: nmstate-clean-job
