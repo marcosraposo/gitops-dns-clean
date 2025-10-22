@@ -3,11 +3,23 @@ kind: Job
 metadata:
   name: nmstate-cleanup
   namespace: openshift-nmstate 
-  
   annotations:
-    argocd.argoproj.io/hook: PostDelete  
-    argocd.argoproj.io/hook-delete-policy: HookFailed
+    # 🚨 Mude para Sync: NÃO executa na criação (apenas cria o recurso Job).
+    argocd.argoproj.io/hook: Sync  
+    
+    # 🚨 ANOTAÇÃO CRÍTICA: Diz ao ArgoCD para executar este Job como um Hook
+    # quando a Application for deletada. Ele será executado ANTES do prune
+    # dos recursos filhos normais (ServiceAccount, NNCP, etc.).
+    argocd.argoproj.io/hook-delete-policy: Hook
+    
+    # sync-wave ALTO: O Job é o primeiro recurso a ser processado na exclusão.
     argocd.argoproj.io/sync-wave: "10"
+
+
+#  annotations:
+#    argocd.argoproj.io/hook: PostDelete  
+#    argocd.argoproj.io/hook-delete-policy: HookFailed
+#    argocd.argoproj.io/sync-wave: "10"
 spec:
   template:
     spec:
