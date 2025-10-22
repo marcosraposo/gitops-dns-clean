@@ -8,7 +8,7 @@ spec:
     namespace: openshift-nmstate
     name: in-cluster
   source:
-    path: openshift-nmstate/04-helper/manifests
+    path: openshift-nmstate/04-helper/clean-all-crds/manifests
     repoURL: https://github.com/marcosraposo/gitops-dns-clean
     targetRevision: HEAD
   sources: []
