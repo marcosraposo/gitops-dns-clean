@@ -1,102 +1,131 @@
-## Practical Guide: Managing DNS Configuration in an OpenShift Cluster with NMState and Automated Removal via ArgoCD Hooks (Updated with App of Apps)
+Com certeza\! Vou reforçar a ideia de que, embora a estrutura GitOps completa exista (App of Apps), o foco do artigo é isolar e aplicar apenas o componente de configuração (`03-dns-custom`), assumindo que os pré-requisitos (`01-operator` e `02-instance`) já foram atendidos através daquela mesma estrutura ou de forma manual.
+
+Aqui está o artigo completo e atualizado em inglês, no formato Markdown, com a clareza sobre o escopo da aplicação.
+
+-----
+
+## Practical Guide: Managing Custom DNS Configuration with NMState and ArgoCD Hooks
 
 ## Introduction
 
-Managing network configurations on Kubernetes cluster nodes, such as adding custom DNS resolvers, can be a challenging task. The **Red Hat NMState Operator (Node Network Configuration Policy)** simplifies this by allowing declarative network configuration management via Kubernetes Custom Resources (CRs).
+This guide details a robust GitOps approach for injecting custom DNS resolvers into OpenShift cluster nodes using the **NMState Operator (Node Network Configuration Policy)**. We will focus on a single ArgoCD Application to manage the configuration and, crucially, implement an automated cleanup mechanism using an **ArgoCD PostDelete Hook Job**.
 
-This article demonstrates how to use NMState to inject custom DNS resolvers into OpenShift cluster nodes, leveraging **ArgoCD's App of Apps pattern** for the GitOps workflow. This pattern allows us to install the Operator, its instance, and the configuration in a single step. We address a crucial point: the necessity of ensuring the **cleanup** of these configurations after the ArgoCD Application is removed, as NMState does not perform this automatically. To solve this, we implement a **Cleanup Job** triggered via an ArgoCD PostDelete Hook, ensuring a complete rollback.
+This solution addresses a known NMState behavior: the need to explicitly apply an empty state configuration to truly remove previous settings.
 
-## Prerequisites
+## Prerequisites and Environment
 
-1.  Running OpenShift Cluster.
-2.  ArgoCD installed and configured (to manage the Applications).
-3.  NMState Operator (initial setup is done via the App of Apps).
-4.  Git Repository structured as shown in Step 3.
+This article is based on a structured GitOps repository design that separates the Operator, Instance, and Configuration layers. However, we will focus only on deploying the **Configuration layer (`03-dns-custom`)**.
 
-## Step 1: NMState Configuration Structure (The Repository Layout)
+**Assumptions (Prerequisites MUST be complete):**
 
-To manage the installation and configuration life cycle separately, we will use three distinct ArgoCD Applications, all orchestrated by a fourth **Application of Applications (App of Apps)**.
+1.  **OpenShift Cluster** is running.
+2.  **ArgoCD** is installed in the `openshift-gitops` namespace.
+3.  **NMState Operator and Instance** are installed and running successfully in the `openshift-nmstate` namespace.
+4.  The **`nmstate-clean-job` ServiceAccount** and its necessary permissions for the cleanup Job must exist as a prerequisite (it is part of the foundational **`01-operator`** Application layer in the repository structure).
 
-The repository structure should reflect this separation:
+### ArgoCD Permissions Prerequisite
 
-```bash
-└── openshift-nmstate
-    ├── 01-operator
-    │   ├── 01-application-operator.yaml  # ArgoCD App for Operator Installation
-    │   └── manifests
-    │       ├── clean-nncp-sa-cr-crb.yaml # ServiceAccount and RBAC for Cleanup Hook
-    │       ├── namespace.yaml
-    │       ├── operator-group.yaml
-    │       └── subscription.yaml
-    ├── 02-instance
-    │   ├── 02-application-instance.yaml  # ArgoCD App for NMState Instance
-    │   └── manifests
-    │       └── instance.yaml             # NMState CR
-    ├── 03-dns-custom
-    │   ├── 03-application-dns-custom.yaml # ArgoCD App for DNS Configuration
-    │   └── manifests
-    │       ├── clean-nncp-job.yaml        # The PostDelete Hook Job (Cleanup) 
-    │       └── dns-custom.yaml            # NodeNetworkConfigurationPolicy
-    └── extras
-        ├── 00-app-of-apps-dns-custom.yaml      # Main App that deploys 01, 02, and 03
+To allow the ArgoCD Application Controller to create the necessary NMState objects (`NodeNetworkConfigurationPolicy`) and the cleanup `Job`, the following permissions must be pre-configured:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argocd-nmstate-manager # Descriptive Role name
+rules:
+- apiGroups: ["nmstate.io"] # The API group for NMState objects
+  resources: ["*"]
+  verbs: ["*"] # Permissions to manage NMState resources (NNCP)
+- apiGroups: ["batch"] # The API group for Jobs
+  resources: ["jobs"]
+  verbs: ["*"] # Permissions to create and manage the cleanup Job
+- apiGroups: [""] # Core API group for ServiceAccounts
+  resources: ["serviceaccounts"] 
+  verbs: ["create", "get", "list", "watch", "update", "patch", "delete"] 
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argocd-nmstate-binding # Descriptive Binding name
+subjects:
+- kind: ServiceAccount
+  name: openshift-gitops-argocd-application-controller # The ServiceAccount used by the ArgoCD controller
+  namespace: openshift-gitops # The Namespace where ArgoCD is installed
+roleRef:
+  kind: ClusterRole
+  name: argocd-nmstate-manager # The ClusterRole created above
+  apiGroup: rbac.authorization.k8s.io
 ```
 
-## Step 2: Configuring DNS and Cleanup Resources
+-----
 
-This step involves creating the specific YAML files for the NNCP and the Cleanup Job.
+## Step 1: Git Repository Structure
 
-### 2.1. DNS-Resolver Configuration (NNCP)
+The complete repository structure is designed for a layered deployment (e.g., via App of Apps), but **we will only be applying the `03-dns-custom` component**.
 
-The file (`dns-custom.yaml`)` contain the desired DNS configuration using the `NodeNetworkConfigurationPolicy` (NNCP).
+```bash
+├── openshift-nmstate
+│   ├── 01-operator                 # Contains NMState Operator and Job RBAC (Prerequisite)
+│   │   ├── 01- application-operator.yaml
+│   │   └── manifests
+│   │       ├── clean-nncp-sa-cr-crb.yaml # ServiceAccount and RBAC for Cleanup Job
+│   │       ├── cr-crb-argo.yaml         
+│   │       └── ...
+│   ├── 02-instance                 # Contains NMState Instance (Prerequisite)
+│   │   ├── 02-application-instance.yaml
+│   │   └── manifests
+│   │       └── instance.yaml
+│   └── 03-dns-custom               # OUR FOCUS: Configuration Layer
+│       ├── 03-application-dns-custom.yaml # ArgoCD Application to manage DNS configuration
+│       └── manifests
+│           ├── clean-nncp-job.yaml        # The PostDelete Hook Job (Cleanup logic)
+│           └── dns-custom.yaml            # NodeNetworkConfigurationPolicy (The DNS configuration)
+```
 
-**(NNCP Example - `dns-custom.yaml`)**
+-----
+
+## Step 2: Custom DNS Configuration (`dns-custom.yaml`)
+
+This file defines the desired state for the DNS resolvers, which NMState will enforce across the nodes.
+
+**(NodeNetworkConfigurationPolicy - `dns-custom.yaml`)**
 
 ```yaml
 apiVersion: nmstate.io/v1
 kind: NodeNetworkConfigurationPolicy
 metadata:
-  name: dns-custom
+  name: dns-custom # Policy name
 spec:
   desiredState:
     dns-resolver:
       config:
         search:
-          - cluster.local
+          - cluster.local # DNS search domains
         server:
+          # Custom DNS servers to be applied to the nodes
+          - 10.36.64.2
           - 10.36.41.51
-       
 ```
+
+> ℹ️ **Image Guidance:** Show a screenshot highlighting the `server` and `search` entries in the `dns-custom.yaml` file.
 
 -----
 
-### 2.1.1. The Challenge of Configuration Removal
+## Step 3: The Automated Cleanup Job (`clean-nncp-job.yaml`)
 
-According to the official Red Hat documentation (e.g., [Red Hat Docs Link](https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/kubernetes_nmstate/k8s-nmstate-updating-node-network-config#virt-example-nmstate-IP-management-dns_k8s-nmstate-updating-node-network-config)), simply deleting the NNCP that added the custom DNS configuration **does not remove the configuration from the node.**
+### The Removal Challenge
 
-To effectively revert the DNS changes, a subsequent NNCP must be applied with an identical structure but with empty values, explicitly telling NMState to remove the settings:
+According to documentation, simply deleting the NNCP **does not remove the configuration from the node.** A subsequent NNCP must be applied with an empty state (`dns-resolver: config: {}`) to trigger the removal.
 
-```yaml
-# ...
-    dns-resolver:
-      config: {}
-    interfaces: []
-# ...
-```
+To automate this rollback, we implement a Job executed via a **`PostDelete` Hook**.
 
-In an automated GitOps environment, forcing a manual step to apply this "cleanup" configuration after the ArgoCD Application is deleted is undesirable and error-prone. To maintain a fully automated lifecycle, we need a mechanism to execute this rollback step automatically.
+### The Cleanup Job Definition
 
-This is where the **Cleanup Job** comes into play, as detailed below.
+This Job runs after the ArgoCD Application is deleted. It uses the pre-configured `nmstate-clean-job` ServiceAccount to execute the cleanup logic.
 
------
-
-### 2.2. The Cleanup Job and RBAC (PostDelete Hook)
-
-The cleanup logic is separated into two files:
-
-1.  **`clean-nncp-sa-cr-crb.yaml` (RBAC):** Contains the `ServiceAccount` (`nmstate-clean-job`) and its permissions, which are deployed by the **`01-operator`** Application.
-2.  **`clean-nncp-job.yaml` (Job Hook):** Contains the `Job` definition, deployed by the **`03-dns-custom`** Application. The crucial ArgoCD annotations (`argocd.argoproj.io/hook: PostDelete` and `serviceAccountName: nmstate-clean-job`) ensure it runs after deletion with the necessary permissions.
-
-**(Cleanup Job Snippet - `clean-nncp-job.yaml`)**
+**(Cleanup Job - `clean-nncp-job.yaml`)**
 
 ```yaml
 apiVersion: batch/v1
@@ -105,21 +134,22 @@ metadata:
   name: nmstate-cleanup
   namespace: openshift-nmstate 
   annotations:
-    argocd.argoproj.io/hook: PostDelete  
-    argocd.argoproj.io/hook-delete-policy: HookFailed
+    argocd.argoproj.io/hook: PostDelete          # Trigger this Job after the ArgoCD Application is deleted
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded # Delete the Job only if it finishes successfully
 spec:
   template:
     spec:
-      serviceAccountName: nmstate-clean-job # The ServiceAccount we created
-      restartPolicy: Never # Ensures the Job does not restart the pod if it fails
+      serviceAccountName: nmstate-clean-job # The ServiceAccount that MUST exist as a prerequisite for permissions
+      restartPolicy: Never                  # Ensure the Pod does not restart if it fails
       containers:
       - name: yaml-generator-executor
-        image: registry.redhat.io/openshift4/ose-cli:latest # Image with the OpenShift CLI
+        image: registry.redhat.io/openshift4/ose-cli:latest # Image with OpenShift CLI (oc)
         command: ["/bin/bash", "-c"]
         args:
           - | 
-
-            # 1. Write the YAML content to the file
+            echo "Starting DNS cleanup Job..."
+            
+            # 1. Write the YAML content to a file
             cat <<EOF > /tmp/dns-custom-cleanup.yaml
             apiVersion: nmstate.io/v1
             kind: NodeNetworkConfigurationPolicy
@@ -129,95 +159,81 @@ spec:
             spec: 
               desiredState: 
                 dns-resolver:
-                  config: {}  
+                  config: {}  # Empty config forces NMState to remove previous custom settings
             EOF
+            
+            # Apply the temporary NNCP to initiate DNS cleanup
             oc apply -f /tmp/dns-custom-cleanup.yaml
+            
+            echo "Cleanup NNCP applied. Waiting 30 seconds for NMState to process..."
             sleep 30
-            oc delete nncp dns-custom-cleanup 
-            oc delete --namespace openshift-nmstate subscriptions.operators.coreos.com kubernetes-nmstate-operator
-            echo "Removing NMState ClusterServiceVersion..."
-            # You will need to get the exact name of the CSV, which changes with versions (e.g.: nmstate-operator.1.x.x)
-            # A robust way is to list and filter:
-            CSV_NAME=$(oc get csv -n openshift-nmstate -o=jsonpath='{.items[?(@.spec.displayName=="NMState")].metadata.name}' || true)
-            if [ -n "$CSV_NAME" ]; then
-                echo "Found CSV: $CSV_NAME. Deleting..."
-                oc delete clusterserviceversion "$CSV_NAME" -n openshift-nmstate --wait=true --timeout=2m
-            else
-                echo "NMState CSV not found or already deleted."
-            fi
-            echo "Removing NMState CRDs..."
-            oc -n openshift-nmstate delete nmstate nmstate
-            oc delete --all deployments --namespace=openshift-nmstate          
-            oc delete crd nmstates.nmstate.io
-            oc delete crd nodenetworkconfigurationenactments.nmstate.io
-            oc delete crd nodenetworkstates.nmstate.io
-            oc delete crd nodenetworkconfigurationpolicies.nmstate.io
-            oc delete namespace openshift-nmstate --wait=false
-            # Add any other CRD that NMState might have installed            
-            echo "NMState Operator removal complete."                    
+            
+            # 2. Delete the temporary cleanup policy
+            echo "Removing the created cleanup NNCP"
+            oc delete nncp dns-custom-cleanup --ignore-not-found=true
+            
+            echo "Custom DNS removal and NNCP cleanup completed successfully" 
 ```
 
+### The Required RBAC for the Job (Prerequisite)
 
-## Step 3: Orchestration with App of Apps
+The `nmstate-clean-job` ServiceAccount (created by the `01-operator` Application) must have the following `ClusterRole` and `ClusterRoleBinding` to interact with NMState objects:
 
-Instead of synchronizing the three Applications (`01-operator`, `02-instance`, `03-dns-custom`) individually, we use the App of Apps pattern. The file `00-app-of-apps-dns-custom.yaml` is the **single Application** that the user will deploy.
-
-**(App of Apps - `00-apps-of-app-dns.yaml`)**
+**(RBAC Snippet - `clean-nncp-sa-cr-crb.yaml`)**
 
 ```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Application
+# ... (ServiceAccount definition - created by 01-operator) ...
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
 metadata:
-  name: 00-app-of-apps-dns-custom
-  namespace: openshift-gitops
-spec:
-  destination:
-    namespace: openshift-gitops
-    name: in-cluster  
-  sources:
-    - path: openshift-nmstate/01-operator/
-      repoURL: https://github.com/marcosraposo/gitops-dns-clean
-      targetRevision: HEAD
-    - path: openshift-nmstate/02-instance/
-      repoURL: https://github.com/marcosraposo/gitops-dns-clean
-      targetRevision: HEAD   
-    - path: openshift-nmstate/03-dns-custom/
-      repoURL: https://github.com/marcosraposo/gitops-dns-clean
-      targetRevision: HEAD          
-  project: default
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true   
+  name: nmstate-clean-job-cr
+rules:
+- apiGroups: ["nmstate.io"] 
+  resources: ["nodenetworkconfigurationpolicies"] 
+  verbs: ["get", "list", "create", "delete", "watch"] # Required for the Job to create and delete the temporary NNCP
+- apiGroups: [""] # Core API group for pods/log
+  resources: ["pods","pods/log"]
+  verbs: ["get", "list", "watch"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: nmstate-clean-job-crb
+subjects:
+  - kind: ServiceAccount
+    name: nmstate-clean-job
+    namespace: openshift-nmstate
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: nmstate-clean-job-cr
 ```
 
-> **Note:** The individual Application manifests (`01-application-operator.yaml`, etc.) must be configured to ensure dependency order, often achieved by referencing the Git repository root and the correct path to their respective `manifests` folder.
+-----
 
-## Step 4: Deployment and Removal
+## Step 4: Deployment and Verification
 
 ### Deployment
 
-1.  In ArgoCD, create a new Application pointing only to the `00-apps-of-app-dns.yaml` file (or the directory `/extras`).
-2.  Synchronize the main Application (`00-app-of-apps-dns-custom`).
-3.  **Result:** ArgoCD will recursively deploy the Operator (01), the Instance (02), and the DNS Configuration (03), ensuring the NMState environment is fully ready in one go.
+1.  Create a new ArgoCD Application pointing to the **`openshift-nmstate/03-dns-custom`** path in your repository.
+2.  Synchronize the Application (e.g., using the `03-application-dns-custom.yaml` definition).
+3.  **Result:** The NNCP (`dns-custom.yaml`) and the cleanup Job (`clean-nncp-job.yaml`) are deployed. NMState enforces the NNCP, adding the custom DNS servers to the nodes.
 
 ### Removal and Automated Cleanup
 
-1.  In ArgoCD, execute the **Delete** operation on the main Application (`00-app-of-apps-dns-custom`).
-2.  ArgoCD will attempt to delete the child Applications (01, 02, 03).
-3.  When deleting the **`03-dns-custom`** Application:
-      * The NNCP (`dns-custom.yaml`) is deleted.
-      * The **`nmstate-cleanup` Job** is triggered by the `PostDelete` hook.
-      * The Job runs, applies a temporary NNCP with an empty DNS config (`config: {}`), forcing the nodes to revert the custom DNS settings to their default state.
-      * The Job then deletes the temporary cleanup NNCP.
+1.  In ArgoCD, execute the **Delete** operation on the Application (`03-application-dns-custom`).
+2.  ArgoCD deletes the NNCP (`dns-custom.yaml`).
+3.  The **`nmstate-cleanup` Job** is triggered by the `PostDelete` hook.
+4.  The Job runs, applying the empty-state NNCP to revert the configuration before the Job itself finishes and is potentially deleted.
 
 **Verification:**
 
 After the deletion process is complete and the `nmstate-cleanup` Job finishes successfully:
 
-1.  Check the Job logs to confirm the temporary NNCP was applied and deleted.
-2.  Verify the `/etc/resolv.conf` on a cluster node. The custom DNS entries should be gone, confirming the successful automated rollback.
+1.  Check the Job status (should be `Completed`).
+2.  Verify the `/etc/resolv.conf` on a cluster node (e.g., via `oc debug node/<node-name>`). The custom DNS entries (`10.36.x.x`) should be removed, confirming the successful automated rollback.
 
 ## Conclusion
 
-By leveraging the **App of Apps pattern** in ArgoCD, we achieve streamlined, single-point deployment for complex installations like the NMState Operator. Crucially, by integrating the **PostDelete Hook Job**, we overcome the native limitations of the NMState operator concerning automated configuration cleanup, ensuring a **fully GitOps-compliant, safe, and automated lifecycle** for custom DNS configurations.
+By isolating the configuration into a dedicated ArgoCD Application and employing a **PostDelete Hook Job** with precise RBAC, we successfully overcome the NMState operator's limitation regarding configuration cleanup. This pattern ensures that the custom DNS settings are fully managed through GitOps: easy to apply and automatically cleaned up upon removal.
