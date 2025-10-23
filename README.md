@@ -1,9 +1,3 @@
-Com certeza\! Vou reforçar a ideia de que, embora a estrutura GitOps completa exista (App of Apps), o foco do artigo é isolar e aplicar apenas o componente de configuração (`03-dns-custom`), assumindo que os pré-requisitos (`01-operator` e `02-instance`) já foram atendidos através daquela mesma estrutura ou de forma manual.
-
-Aqui está o artigo completo e atualizado em inglês, no formato Markdown, com a clareza sobre o escopo da aplicação.
-
------
-
 ## Practical Guide: Managing Custom DNS Configuration with NMState and ArgoCD Hooks
 
 ## Introduction
@@ -108,8 +102,6 @@ spec:
           - 10.36.64.2
           - 10.36.41.51
 ```
-
-> ℹ️ **Image Guidance:** Show a screenshot highlighting the `server` and `search` entries in the `dns-custom.yaml` file.
 
 -----
 
