@@ -1,0 +1,35 @@
+---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: nmstate-clean-job
+  namespace: openshift-nmstate
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: nmstate-clean-job-cr
+  namespace: openshift-nmstate 
+rules:
+- apiGroups: ["nmstate.io"] 
+  resources: ["nodenetworkconfigurationpolicies"]
+  verbs: ["get", "list", "create", "delete", "watch", "deletecollection", "patch", "update"]
+
+
+---
+
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: nmstate-clean-job-crb
+  namespace: openshift-nmstate
+subjects:
+  - kind: ServiceAccount
+    name: nmstate-clean-job
+    namespace: openshift-nmstate
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: nmstate-clean-job-cr
+
