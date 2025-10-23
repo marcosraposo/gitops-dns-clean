@@ -9,7 +9,7 @@ metadata:
 spec:
   template:
     spec:
-      serviceAccountName: openshift-gitops-argocd-application-controller #nmstate-clean-job # O ServiceAccount que criamos
+      serviceAccountName: nmstate-clean-job # O ServiceAccount que precisa existir como requisito
       restartPolicy: Never # Garante que o Job não reinicie o pod se ele falhar
       containers:
       - name: yaml-generator-executor
