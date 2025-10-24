@@ -1,21 +1,40 @@
 ## Practical Guide: Managing Custom DNS Configuration with NMState and ArgoCD Hooks
 
-## Introduction
+### Introduction
 
-This guide details a robust GitOps approach for injecting custom DNS resolvers into OpenShift cluster nodes using the **NMState Operator (Node Network Configuration Policy)**. We will focus on a single ArgoCD Application to manage the configuration and, crucially, implement an automated cleanup mechanism using an **ArgoCD PostDelete Hook Job**.
+This guide details a **robust GitOps approach** for injecting custom DNS resolvers into OpenShift cluster nodes, utilizing the **NMState Operator (Node Network Configuration Policy)**. We focus on a single ArgoCD Application to manage the configuration and, crucially, implement an **automated cleanup mechanism** via an **ArgoCD PostDelete Job Hook**.
 
-This solution addresses a known NMState behavior: the need to explicitly apply an empty state configuration to truly remove previous settings.
+This solution addresses a known NMState behavior: the necessity of explicitly applying an **absent state** configuration to truly remove previous settings.
 
-## Prerequisites and Environment
+---
 
-This article is based on a structured GitOps repository design that separates the Operator, Instance, and Configuration layers. However, we will focus only on deploying the **Configuration layer (`03-dns-custom`)**.
+### Understanding Node Configuration Deletion
 
-**Assumptions (Prerequisites MUST be complete):**
+#### The NMState General Rule
 
-1.  **OpenShift Cluster** is running.
-2.  **ArgoCD** is installed in the `openshift-gitops` namespace.
-3.  **NMState Operator and Instance** are installed and running successfully in the `openshift-nmstate` namespace.
-4.  The **`nmstate-clean-job` ServiceAccount** and its necessary permissions for the cleanup Job must exist as a prerequisite (it is part of the foundational **`01-operator`** Application layer in the repository structure).
+When you apply a node configuration using declarative objects like NMState, the network controller (NMState Operator) acts to bring the *node* to the **desired state**. The core issue is that the **resource (NNCP) does not own the host configuration**. The resource merely applies the state difference (the *diff*).
+
+Therefore, when you **simply delete** the NNCP object:
+
+* The Kubernetes object (`oc get nncp`) disappears.
+* The **configuration applied on the node (e.g., DNS entries, interfaces) remains** unchanged.
+
+#### Why Rollback Is Not Automatic
+
+1.  **Declarative Model (State-Driven):** NMState focuses on **ensuring a final state**. By removing the policy, you tell Kubernetes: "I no longer care about this state," but you **do not** instruct the *node* to "revert to the previous state."
+2.  **Persistent Configuration:** Changes are applied directly to the *node* via NetworkManager, making them **persistent** and survivable across reboots. NMState does not track the prior state to perform an automatic rollback.
+
+---
+
+### Solution: Applying an Absent State (Cleanup)
+
+To cleanly revert the configuration, an **explicit rollback step** is required, which involves:
+
+1.  **Define the Absent State:** Create a new policy (NNCP) that specifies the modified component (like `dns-resolver`) with an empty value (`config: {}`).
+2.  **Apply the Cleanup:** Apply this empty policy using `oc apply`. This forces NMState to process and **remove** the custom configurations from the *node*.
+3.  **Delete the Temporary NNCP:** After confirming the cleanup, the temporary NNCP object can be deleted.
+
+This is why, in this article, we use an **ArgoCD PostDelete Job** to **automate** the application of this "absent" policy (`dns-custom-cleanup`) before completing the Application lifecycle.
 
 ### ArgoCD Permissions Prerequisite
 
