@@ -36,6 +36,18 @@ To cleanly revert the configuration, an **explicit rollback step** is required, 
 
 This is why, in this article, we use an **ArgoCD PostDelete Job** to **automate** the application of this "absent" policy (`dns-custom-cleanup`) before completing the Application lifecycle.
 
+## Prerequisites and Environment
+
+This article is based on a structured GitOps repository design that separates the Operator, Instance, and Configuration layers. However, we will focus only on deploying the **Configuration layer (`03-dns-custom`)**.
+
+**Assumptions (Prerequisites MUST be complete):**
+
+1.  **OpenShift Cluster** is running.
+2.  **ArgoCD** is installed in the `openshift-gitops` namespace.
+3.  **NMState Operator and Instance** are installed and running successfully in the `openshift-nmstate` namespace.
+4.  The **`nmstate-clean-job` ServiceAccount** and its necessary permissions for the cleanup Job must exist as a prerequisite (it is part of the foundational **`01-operator`** Application layer in the repository structure).
+
+
 ### ArgoCD Permissions Prerequisite
 
 To allow the ArgoCD Application Controller to create the necessary NMState objects (`NodeNetworkConfigurationPolicy`) and the cleanup `Job`, the following permissions must be pre-configured:
