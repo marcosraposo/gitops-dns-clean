@@ -206,6 +206,10 @@ roleRef:
 
 ## Step 4: Deployment and Verification
 
+Before synchronizing the ArgoCD application, the `/etc/resolv.conf` on the cluster nodes typically shows only the default OpenShift DNS resolvers (e.g., the KubeVirt or OpenShift internal services). This is the state we aim to restore after the cleanup hook runs.
+
+![Screenshot of the /etc/resolv.conf file on a node, showing only default OpenShift DNS entries (the 'before' state).](images/resolv-conf-before-app.png)
+
 ### Deployment
 
 1.  Create a new ArgoCD Application pointing to the **`openshift-nmstate/03-dns-custom`** path in your repository.
