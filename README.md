@@ -212,11 +212,64 @@ Before synchronizing the ArgoCD application, the `/etc/resolv.conf` on the clust
 
 ### Deployment
 
+To initiate the GitOps flow, we create the ArgoCD Application, pointing to the DNS configuration path (`03-dns-custom`) in our repository.
+
+**ArgoCD Application (Example: `03-application-dns-custom.yaml`)**
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: 03-nmstate-dns-custom
+  namespace: openshift-gitops  #Namespace where ArgoCD is installed
+spec:
+  destination:
+    namespace: openshift-nmstate #Namespace where the NNCP and Job will be created
+    name: in-cluster 
+  source:
+    path: openshift-nmstate/03-dns-custom/manifests # Path to dns-custom.yaml and clean-nncp-job.yaml
+    repoURL: https://github.com/marcosraposo/gitops-dns-clean # Replace with your repository URL
+    targetRevision: HEAD
+  sources: []
+  project: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+```
+
 1.  Create a new ArgoCD Application pointing to the **`openshift-nmstate/03-dns-custom`** path in your repository.
 2.  Synchronize the Application (e.g., using the `03-application-dns-custom.yaml` definition).
 3.  **Result:** The NNCP (`dns-custom.yaml`) and the cleanup Job (`clean-nncp-job.yaml`) are deployed. NMState enforces the NNCP, adding the custom DNS servers to the nodes.
 
 ![Dashboard ArgoCD](images/dashboard-application-dns.png "Application created and synchronized")
+
+### Verification of Successful Configuration
+
+Once the ArgoCD Application is synced, we can confirm that the NMState Operator successfully created the policy and applied the network change to the cluster nodes.
+
+**1. NMState Policy Creation in OpenShift:**
+
+Check the OpenShift console or use the `oc` CLI to confirm the `NodeNetworkConfigurationPolicy` was created and is in a successful state.
+
+```bash
+oc get nncp dns-custom -n openshift-nmstate
+```
+
+[Screenshot of NNCP, showing OpenShift DNS entries.](images/nncp-dns-custom.png)
+
+**2. DNS Configuration Change on the Node:**
+
+Access a node to verify the `/etc/resolv.conf` file was updated with the custom DNS server entries (`10.36.64.2` and `10.36.41.51`). 
+
+```bash
+# Example command to check resolv.conf on a master node
+oc debug node/malima-sp4m8-master-0 -- chroot /host cat /etc/resolv.conf
+```
+
+[Screenshot of resolv.conf on master node, showing OpenShift DNS entries.](images/resolv-conf-after-app.png)
+
+-----
 
 ### Removal and Automated Cleanup
 
@@ -225,12 +278,35 @@ Before synchronizing the ArgoCD application, the `/etc/resolv.conf` on the clust
 3.  The **`nmstate-cleanup` Job** is triggered by the `PostDelete` hook.
 4.  The Job runs, applying the empty-state NNCP to revert the configuration before the Job itself finishes and is potentially deleted.
 
+![Dashboard ArgoCD](images/application-dns-delete-sync.png "Application being deleted")
+
+Check the job `nmstate-clean-job` was created 
+
+![Dashboard ArgoCD](images/application-dns-delete-sync-job.png "Job Cleanup running")
+
+The policy created only to run during the job runtime ensures the removal of the custom DNS entries.
+
+![Dashboard NNCP](images/nncp-delete.png "NNCP for rollback dns setup")
+
+After the job finishes the commands of clean, the application `03-dns-custom-config` has been deleted from the ArgoCD Dashboard, signifying the complete removal of the DNS configuration layer from the cluster.
+
+![Dashboard ArgoCD](images/dashboard-application-dns-deleted.png "Dashboard without Dns Application")
+
 **Verification:**
 
 After the deletion process is complete and the `nmstate-cleanup` Job finishes successfully:
 
-1.  Check the Job status (should be `Completed`).
-2.  Verify the `/etc/resolv.conf` on a cluster node (e.g., via `oc debug node/<node-name>`). The custom DNS entries (`10.36.x.x`) should be removed, confirming the successful automated rollback.
+1.  Verify the `/etc/resolv.conf` on a cluster node (e.g., via `oc debug node/<node-name>`). The custom DNS entries (`10.36.x.x`) should be removed, confirming the successful automated rollback.
+2.  Check if the temporary policy created during the job runtime was deleted.
+
+The `resolv.conf` after nmstate-cleanup job
+
+[Screenshot of resolv.conf on master node, showing OpenShift DNS entries.](images/resolv-conf-after-clean.png)
+
+List of policies in NNCP
+
+[Screenshot of resolv.conf on master node, showing OpenShift DNS entries.](images/nncp-empty-after-clean.png)
+
 
 ## Conclusion
 
