@@ -310,4 +310,6 @@ List of policies in NNCP
 
 ## Conclusion
 
-By isolating the configuration into a dedicated ArgoCD Application and employing a **PostDelete Hook Job** with precise RBAC, we successfully overcome the NMState operator's limitation regarding configuration cleanup. This pattern ensures that the custom DNS settings are fully managed through GitOps: easy to apply and automatically cleaned up upon removal.
+By isolating the configuration into a dedicated ArgoCD Application and employing a **PostDelete Hook Job** with precise RBAC, we successfully overcome the NMState operator's limitation regarding configuration cleanup. 
+
+This pattern ensures that the custom DNS settings are fully managed through GitOps: easy to apply and automatically cleaned up upon removal.
