@@ -212,6 +212,8 @@ roleRef:
 2.  Synchronize the Application (e.g., using the `03-application-dns-custom.yaml` definition).
 3.  **Result:** The NNCP (`dns-custom.yaml`) and the cleanup Job (`clean-nncp-job.yaml`) are deployed. NMState enforces the NNCP, adding the custom DNS servers to the nodes.
 
+![Dashboard ArgoCD](images/dashboard-application-dns.png "Application created and synchronized")
+
 ### Removal and Automated Cleanup
 
 1.  In ArgoCD, execute the **Delete** operation on the Application (`03-application-dns-custom`).
