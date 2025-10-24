@@ -256,7 +256,7 @@ Check the OpenShift console or use the `oc` CLI to confirm the `NodeNetworkConfi
 oc get nncp dns-custom -n openshift-nmstate
 ```
 
-[Screenshot of NNCP, showing OpenShift DNS entries.](images/nncp-dns-custom.png)
+![Screenshot of NNCP, showing OpenShift DNS entries.](images/nncp-dns-custom.png)
 
 **2. DNS Configuration Change on the Node:**
 
@@ -267,7 +267,7 @@ Access a node to verify the `/etc/resolv.conf` file was updated with the custom 
 oc debug node/malima-sp4m8-master-0 -- chroot /host cat /etc/resolv.conf
 ```
 
-[Screenshot of resolv.conf on master node, showing OpenShift DNS entries.](images/resolv-conf-after-app.png)
+![Screenshot of resolv.conf on master node, showing OpenShift DNS entries.](images/resolv-conf-after-app.png)
 
 -----
 
@@ -301,11 +301,11 @@ After the deletion process is complete and the `nmstate-cleanup` Job finishes su
 
 The `resolv.conf` after nmstate-cleanup job
 
-[Screenshot of resolv.conf on master node, showing OpenShift DNS entries.](images/resolv-conf-after-clean.png)
+![Screenshot of resolv.conf on master node, showing OpenShift DNS entries.](images/resolv-conf-after-clean.png)
 
 List of policies in NNCP
 
-[Screenshot of resolv.conf on master node, showing OpenShift DNS entries.](images/nncp-empty-after-clean.png)
+![Screenshot of resolv.conf on master node, showing OpenShift DNS entries.](images/nncp-empty-after-clean.png)
 
 
 ## Conclusion
